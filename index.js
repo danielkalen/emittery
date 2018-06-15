@@ -1,7 +1,5 @@
 'use strict';
 
-const anyMap = new WeakMap();
-const eventsMap = new WeakMap();
 const resolvedPromise = Promise.resolve();
 
 function assertEventName(eventName) {
@@ -17,7 +15,7 @@ function assertListener(listener) {
 }
 
 function getListeners(instance, eventName) {
-	const events = eventsMap.get(instance);
+	const events = instance.eventsMap;
 	if (!events.has(eventName)) {
 		events.set(eventName, new Set());
 	}
@@ -27,8 +25,8 @@ function getListeners(instance, eventName) {
 
 class Emittery {
 	constructor() {
-		anyMap.set(this, new Set());
-		eventsMap.set(this, new Map());
+		this.anyMap = new Set();
+		this.eventsMap = new Map();
 	}
 
 	on(eventName, listener) {
@@ -58,7 +56,7 @@ class Emittery {
 		assertEventName(eventName);
 
 		const listeners = getListeners(this, eventName);
-		const anyListeners = anyMap.get(this);
+		const anyListeners = this.anyMap;
 		const staticListeners = [...listeners];
 		const staticAnyListeners = [...anyListeners];
 
@@ -81,7 +79,7 @@ class Emittery {
 		assertEventName(eventName);
 
 		const listeners = getListeners(this, eventName);
-		const anyListeners = anyMap.get(this);
+		const anyListeners = this.anyMap;
 		const staticListeners = [...listeners];
 		const staticAnyListeners = [...anyListeners];
 
@@ -103,21 +101,21 @@ class Emittery {
 
 	onAny(listener) {
 		assertListener(listener);
-		anyMap.get(this).add(listener);
+		this.anyMap.add(listener);
 		return this.offAny.bind(this, listener);
 	}
 
 	offAny(listener) {
 		assertListener(listener);
-		anyMap.get(this).delete(listener);
+		this.anyMap.delete(listener);
 	}
 
 	clearListeners(eventName) {
 		if (typeof eventName === 'string') {
 			getListeners(this, eventName).clear();
 		} else {
-			anyMap.get(this).clear();
-			for (const listeners of eventsMap.get(this).values()) {
+			this.anyMap.clear();
+			for (const listeners of this.eventsMap.values()) {
 				listeners.clear();
 			}
 		}
@@ -125,16 +123,16 @@ class Emittery {
 
 	listenerCount(eventName) {
 		if (typeof eventName === 'string') {
-			return anyMap.get(this).size + getListeners(this, eventName).size;
+			return this.anyMap.size + getListeners(this, eventName).size;
 		}
 
 		if (typeof eventName !== 'undefined') {
 			assertEventName(eventName);
 		}
 
-		let count = anyMap.get(this).size;
+		let count = this.anyMap.size;
 
-		for (const value of eventsMap.get(this).values()) {
+		for (const value of this.eventsMap.values()) {
 			count += value.size;
 		}
 
